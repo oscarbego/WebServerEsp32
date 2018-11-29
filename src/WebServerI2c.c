@@ -321,34 +321,14 @@ esp_err_t hello_get_handlerServer(httpd_req_t *req)
     return ESP_OK;
 }
 
-/*
-httpd_uri_t selectDeviceI2c = {
-    .uri       = "/deviceI2c",
-    .method    = HTTP_GET,
-    .handler   = hello_get_handlerServer,
-
-    .user_ctx  = "Ok"
-};
-*/
 
 httpd_uri_t root = {
     .uri       = "/",
     .method    = HTTP_GET,
     .handler   = hello_get_handlerServer,
-    /* Let's pass response string in user
-     * context to demonstrate it's usage */
     .user_ctx  = HTML
 };
 
-
-/*
-httpd_uri_t helloConf = {
-    .uri       = "/hello",
-    .method    = HTTP_GET,
-    .handler   = hello_get_handlerServer,
-    .user_ctx  = "Hello World!"
-};
-*/
 
 httpd_handle_t start_webSrv(void)
 {
@@ -360,12 +340,7 @@ httpd_handle_t start_webSrv(void)
     if (httpd_start(&server, &config) == ESP_OK) {
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
-        //httpd_register_uri_handler(server, &helloConf);
         httpd_register_uri_handler(server, &root);
-        //httpd_register_uri_handler(server, &selectDeviceI2c);
-
-        //httpd_register_uri_handler(server, &echo1);
-        //httpd_register_uri_handler(server, &ctrl);
 
         return server;
     }
@@ -452,5 +427,5 @@ void app_main(void)
     printf("initialise_wifi(&server); . . . \n");
 
     xTaskCreate(i2c_task_example, "i2c_task_example", 2048, (void *)68, 10, NULL);
-
+    xTaskCreate(i2c_task_example, "i2c_task_example", 2048, (void *)69, 10, NULL);
 }
