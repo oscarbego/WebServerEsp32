@@ -1,6 +1,9 @@
+.gitignore
 .pio
 .pioenvs
 .piolibdeps
 .clang_complete
 .gcc-flags.json
+main_server.c
+main_server2.c
 /lib/*

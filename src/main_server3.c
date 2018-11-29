@@ -42,22 +42,16 @@
   #define min(a,b)            (((a) < (b)) ? (a) : (b))
 #endif
 
-//#define EXAMPLE_WIFI_SSID "oso"
-//#define EXAMPLE_WIFI_PASS ""
-
 
 #define EXAMPLE_WIFI_SSID "IZZI BELTRAN"
 #define EXAMPLE_WIFI_PASS "6141317929"
 
-
 static EventGroupHandle_t wifi_event_group;
 const int CONNECTED_BIT = BIT0;
 
-static int deviceI2c = 0;
-
 static const char *TAG = "WebServer";
 
-
+static int deviceI2c = 0;
 
 //------------ I2C -----------------------------------
 
@@ -99,12 +93,13 @@ static esp_err_t i2c_example_master_init()
  *     - ESP_ERR_INVALID_STATE I2C driver not installed or not in master mode.
  *     - ESP_ERR_TIMEOUT Operation timeout because the bus is busy.
  */
-static esp_err_t i2c_example_master_mpu6050_write(i2c_port_t i2c_num, uint8_t reg_address, uint8_t *data, size_t data_len)
+static esp_err_t i2c_example_master_mpu6050_write(i2c_port_t i2c_num, uint8_t sen_address, uint8_t reg_address, uint8_t *data, size_t data_len)
 {
     int ret;
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, MPU6050_SENSOR_ADDR << 1 | WRITE_BIT, ACK_CHECK_EN);
+    //i2c_master_write_byte(cmd, MPU6050_SENSOR_ADDR << 1 | WRITE_BIT, ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, sen_address << 1 | WRITE_BIT, ACK_CHECK_EN);
     i2c_master_write_byte(cmd, reg_address, ACK_CHECK_EN);
     i2c_master_write(cmd, data, data_len, ACK_CHECK_EN);
     i2c_master_stop(cmd);
@@ -139,12 +134,13 @@ static esp_err_t i2c_example_master_mpu6050_write(i2c_port_t i2c_num, uint8_t re
  *     - ESP_ERR_INVALID_STATE I2C driver not installed or not in master mode.
  *     - ESP_ERR_TIMEOUT Operation timeout because the bus is busy.
  */
-static esp_err_t i2c_example_master_mpu6050_read(i2c_port_t i2c_num, uint8_t reg_address, uint8_t *data, size_t data_len)
+static esp_err_t i2c_example_master_mpu6050_read(i2c_port_t i2c_num, uint8_t sen_address, uint8_t reg_address, uint8_t *data, size_t data_len)
 {
     int ret;
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, MPU6050_SENSOR_ADDR << 1 | WRITE_BIT, ACK_CHECK_EN);
+    //i2c_master_write_byte(cmd, MPU6050_SENSOR_ADDR << 1 | WRITE_BIT, ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, sen_address << 1 | WRITE_BIT, ACK_CHECK_EN);
     i2c_master_write_byte(cmd, reg_address, ACK_CHECK_EN);
     i2c_master_stop(cmd);
     ret = i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
@@ -156,7 +152,8 @@ static esp_err_t i2c_example_master_mpu6050_read(i2c_port_t i2c_num, uint8_t reg
 
     cmd = i2c_cmd_link_create();
     i2c_master_start(cmd);
-    i2c_master_write_byte(cmd, MPU6050_SENSOR_ADDR << 1 | READ_BIT, ACK_CHECK_EN);
+    //i2c_master_write_byte(cmd, MPU6050_SENSOR_ADDR << 1 | READ_BIT, ACK_CHECK_EN);
+    i2c_master_write_byte(cmd, sen_address << 1 | READ_BIT, ACK_CHECK_EN);
     i2c_master_read(cmd, data, data_len, LAST_NACK_VAL);
     i2c_master_stop(cmd);
     ret = i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
@@ -165,21 +162,21 @@ static esp_err_t i2c_example_master_mpu6050_read(i2c_port_t i2c_num, uint8_t reg
     return ret;
 }
 
-static esp_err_t i2c_example_master_mpu6050_init(i2c_port_t i2c_num)
+static esp_err_t i2c_example_master_mpu6050_init(i2c_port_t i2c_num, uint8_t sen_address)
 {
     uint8_t cmd_data;
     vTaskDelay(100 / portTICK_RATE_MS);
     i2c_example_master_init();
     cmd_data = 0x00;    // reset mpu6050
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, PWR_MGMT_1, &cmd_data, 1));
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, sen_address, PWR_MGMT_1, &cmd_data, 1));
     cmd_data = 0x07;    // Set the SMPRT_DIV
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, SMPLRT_DIV, &cmd_data, 1));
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, sen_address, SMPLRT_DIV, &cmd_data, 1));
     cmd_data = 0x06;    // Set the Low Pass Filter
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, CONFIG, &cmd_data, 1));
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, sen_address, CONFIG, &cmd_data, 1));
     cmd_data = 0x18;    // Set the GYRO range
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, GYRO_CONFIG, &cmd_data, 1));
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, sen_address, GYRO_CONFIG, &cmd_data, 1));
     cmd_data = 0x01;    // Set the ACCEL range
-    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, ACCEL_CONFIG, &cmd_data, 1));
+    ESP_ERROR_CHECK(i2c_example_master_mpu6050_write(i2c_num, sen_address, ACCEL_CONFIG, &cmd_data, 1));
     return ESP_OK;
 }
 
@@ -191,33 +188,37 @@ static void i2c_task_example(void *arg)
     static uint32_t error_count = 0;
     int ret;
 
-    i2c_example_master_mpu6050_init(I2C_EXAMPLE_MASTER_NUM);
+    i2c_example_master_mpu6050_init(I2C_EXAMPLE_MASTER_NUM, (uint8_t)arg);
 
     while (1)
     {
         who_am_i = 0;
-        i2c_example_master_mpu6050_read(I2C_EXAMPLE_MASTER_NUM, WHO_AM_I, &who_am_i, 1);
+        i2c_example_master_mpu6050_read(I2C_EXAMPLE_MASTER_NUM, (uint8_t)arg, WHO_AM_I, &who_am_i, 1);
 
         if (0x68 != who_am_i) {
             error_count++;
         }
 
-        memset(sensor_data, 0, 14);
-        ret = i2c_example_master_mpu6050_read(I2C_EXAMPLE_MASTER_NUM, ACCEL_XOUT_H, sensor_data, 14);
+        if (deviceI2c == (uint8_t)arg) {
 
-        if (ret == ESP_OK) {
-            ESP_LOGI(TAG, "*******************\n");
-            ESP_LOGI(TAG, "WHO_AM_I: 0x%02x\n", who_am_i);
-            Temp = 36.53 + ((double)(int16_t)((sensor_data[6] << 8) | sensor_data[7]) / 340);
-            ESP_LOGI(TAG, "TEMP: %d.%d\n", (uint16_t)Temp, (uint16_t)(Temp * 100) % 100);
+          memset(sensor_data, 0, 14);
+          ret = i2c_example_master_mpu6050_read(I2C_EXAMPLE_MASTER_NUM, (uint8_t)arg, ACCEL_XOUT_H, sensor_data, 14);
 
-            for (i = 0; i < 7; i++) {
-                ESP_LOGI(TAG, "sensor_data[%d]: %d\n", i, (int16_t)((sensor_data[i * 2] << 8) | sensor_data[i * 2 + 1]));
-            }
+          if (ret == ESP_OK) {
+              ESP_LOGI(TAG, "*******************\n");
+              ESP_LOGI(TAG, "WHO_AM_I: 0x%02x\n", who_am_i);
+              Temp = 36.53 + ((double)(int16_t)((sensor_data[6] << 8) | sensor_data[7]) / 340);
+              ESP_LOGI(TAG, "TEMP: %d.%d\n", (uint16_t)Temp, (uint16_t)(Temp * 100) % 100);
 
-            ESP_LOGI(TAG, "error_count: %d\n", error_count);
-        } else {
-            ESP_LOGE(TAG, "No ack, sensor not connected...skip...\n");
+              for (i = 0; i < 7; i++) {
+                  ESP_LOGI(TAG, "sensor_data[%d]: %d\n", i, (int16_t)((sensor_data[i * 2] << 8) | sensor_data[i * 2 + 1]));
+              }
+
+              ESP_LOGI(TAG, "error_count: %d\n", error_count);
+          } else {
+              ESP_LOGE(TAG, "No ack, sensor not connected...skip...\n");
+          }
+
         }
 
         vTaskDelay(100 / portTICK_RATE_MS);
@@ -282,11 +283,11 @@ esp_err_t hello_get_handlerServer(httpd_req_t *req)
                 ESP_LOGI(TAG, "Found URL query parameter => dev=%s ", param);
 
                 if(strcmp(param, "0") == 0)
-                  deviceI2c = 0;
+                  deviceI2c = 68;
 
 
                 if(strcmp(param, "1") == 0)
-                  deviceI2c = 1;
+                  deviceI2c = 69;
 
 
                 ESP_LOGI(TAG, "DeviceI2c = %d ", deviceI2c);
@@ -320,16 +321,15 @@ esp_err_t hello_get_handlerServer(httpd_req_t *req)
     return ESP_OK;
 }
 
+/*
 httpd_uri_t selectDeviceI2c = {
     .uri       = "/deviceI2c",
     .method    = HTTP_GET,
     .handler   = hello_get_handlerServer,
-    /* Let's pass response string in user
-     * context to demonstrate it's usage */
+
     .user_ctx  = "Ok"
 };
-
-
+*/
 
 httpd_uri_t root = {
     .uri       = "/",
@@ -340,57 +340,15 @@ httpd_uri_t root = {
     .user_ctx  = HTML
 };
 
+
+/*
 httpd_uri_t helloConf = {
     .uri       = "/hello",
     .method    = HTTP_GET,
     .handler   = hello_get_handlerServer,
-    /* Let's pass response string in user
-     * context to demonstrate it's usage */
     .user_ctx  = "Hello World!"
 };
-
-
-
-/*
-esp_err_t echo1_post_handler(httpd_req_t *req)
-{
-    char buf[100];
-    int ret, remaining = req->content_len;
-
-    while (remaining > 0) {
-        / * Read the data for the request * /
-        if ((ret = httpd_req_recv(req, buf,
-                        min(remaining, sizeof(buf)))) <= 0) {
-            if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
-                / * Retry receiving if timeout occurred * /
-                continue;
-            }
-            return ESP_FAIL;
-        }
-
-        / * Send back the same data * /
-        httpd_resp_send_chunk(req, buf, ret);
-        remaining -= ret;
-
-        / * Log data received * /
-        ESP_LOGI(TAG, "=========== RECEIVED DATA ==========");
-        ESP_LOGI(TAG, "%.*s", ret, buf);
-        ESP_LOGI(TAG, "====================================");
-    }
-
-    // End response
-    httpd_resp_send_chunk(req, NULL, 0);
-    return ESP_OK;
-}
-
-httpd_uri_t echo1 = {
-    .uri       = "/echo",
-    .method    = HTTP_POST,
-    .handler   = echo1_post_handler,
-    .user_ctx  = NULL
-};
 */
-
 
 httpd_handle_t start_webSrv(void)
 {
@@ -402,9 +360,9 @@ httpd_handle_t start_webSrv(void)
     if (httpd_start(&server, &config) == ESP_OK) {
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
-        httpd_register_uri_handler(server, &helloConf);
+        //httpd_register_uri_handler(server, &helloConf);
         httpd_register_uri_handler(server, &root);
-        httpd_register_uri_handler(server, &selectDeviceI2c);
+        //httpd_register_uri_handler(server, &selectDeviceI2c);
 
         //httpd_register_uri_handler(server, &echo1);
         //httpd_register_uri_handler(server, &ctrl);
@@ -421,7 +379,6 @@ void stop_webSrv(httpd_handle_t server)
     // Stop the httpd server
     httpd_stop(server);
 }
-
 
 static esp_err_t event_handler(void *ctx, system_event_t *event)
 {
@@ -461,7 +418,6 @@ static esp_err_t event_handler(void *ctx, system_event_t *event)
     return ESP_OK;
 }
 
-
 static void initialise_wifi(void *arg)
 {
     printf("Initialise Wifi\n");
@@ -483,6 +439,7 @@ static void initialise_wifi(void *arg)
     ESP_ERROR_CHECK( esp_wifi_start() );
 }
 
+
 void app_main(void)
 {
 
@@ -494,6 +451,6 @@ void app_main(void)
     initialise_wifi(&server);
     printf("initialise_wifi(&server); . . . \n");
 
-    xTaskCreate(i2c_task_example, "i2c_task_example", 2048, NULL, 10, NULL);
-    
+    xTaskCreate(i2c_task_example, "i2c_task_example", 2048, (void *)68, 10, NULL);
+
 }

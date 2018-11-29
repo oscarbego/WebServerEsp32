@@ -28,7 +28,9 @@
 #define I2C_EXAMPLE_MASTER_TX_BUF_DISABLE   0                /*!< I2C master do not need buffer */
 #define I2C_EXAMPLE_MASTER_RX_BUF_DISABLE   0                /*!< I2C master do not need buffer */
 
-#define MPU6050_SENSOR_ADDR                 0x68             /*!< slave address for MPU6050 sensor */
+#define MPU6050_SENSOR_ADDR0                 0x68             /*!< slave address for MPU6050 sensor */
+#define MPU6050_SENSOR_ADDR1                 0x69             /*!< slave address for MPU6050 sensor */
+
 #define MPU6050_CMD_START                   0x41             /*!< Command to set measure mode */
 #define MPU6050_WHO_AM_I                    0x75             /*!< Command to read WHO_AM_I reg */
 #define WRITE_BIT                           I2C_MASTER_WRITE /*!< I2C master write */
